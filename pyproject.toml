@@ -1,0 +1,11 @@
+[project]
+name = "immediate-tracking"
+version = "0.1.0"
+description = "Webcam head and eye tracking for opentrack, using MediaPipe."
+requires-python = ">=3.11"
+dependencies = [
+    "mediapipe>=0.10.32",
+    "numpy>=2.4.2",
+    "opencv-contrib-python>=4.13.0.92",
+    "scipy>=1.17.1",
+]

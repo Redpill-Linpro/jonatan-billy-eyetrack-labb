@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waiting for Tracking...</title>
+    <style>
+        body { margin: 0; background: #111; color: #0f0; overflow: hidden; font-family: monospace; }
+        canvas { display: block; }
+        #stats { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="stats">Ready...</div>
+    <canvas id="gazeCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const stats = document.getElementById('stats');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.onresize = resize;
+        resize();
+
+        const socket = new WebSocket('ws://' + window.location.host);
+
+        socket.onmessage = (event) => {
+            const d = JSON.parse(event.data);
+            
+            // Update Page Title with 6-DOF
+            document.title = `Y:${d.yaw.toFixed(1)} P:${d.pitch.toFixed(1)} R:${d.roll.toFixed(1)} | X:${d.x.toFixed(1)} Y:${d.y.toFixed(1)}`;
+            
+            // Update Text Stats
+            stats.innerText = JSON.stringify(d, null, 2);
+
+            // Draw on Canvas
+            // Map the Python -50..50 range to the screen dimensions
+            const screenX = (d.x / 100 + 0.5) * canvas.width;
+            const screenY = (d.y / 100 + 0.5) * canvas.height;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Motion blur effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, 20, 0, Math.PI * 2);
+            ctx.strokeStyle = '#0f0';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw crosshair
+            ctx.moveTo(screenX - 30, screenY); ctx.lineTo(screenX + 30, screenY);
+            ctx.moveTo(screenX, screenY - 30); ctx.lineTo(screenX, screenY + 30);
+            ctx.stroke();
+        };
+    </script>
+</body>
+</html>
