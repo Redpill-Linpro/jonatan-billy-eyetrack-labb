@@ -9,7 +9,11 @@ pub const device_fmt = "/dev/video{d}";
 const sysfs_dir = "/sys/class/video4linux";
 
 pub fn list(arena: std.mem.Allocator, io: std.Io) ![]Camera {
-    var dir = try std.Io.Dir.cwd().openDir(io, sysfs_dir, .{ .iterate = true });
+    // The directory only exists once a V4L2 driver has loaded: without it there are no cameras.
+    var dir = std.Io.Dir.cwd().openDir(io, sysfs_dir, .{ .iterate = true }) catch |err| switch (err) {
+        error.FileNotFound => return &.{},
+        else => return err,
+    };
     defer dir.close(io);
 
     var cameras: std.ArrayList(Camera) = .empty;
