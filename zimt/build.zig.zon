@@ -10,6 +10,7 @@
         "src",
         "shim",
         "Makefile",
+        "sbom.sh",
         "settings.ini",
         "LICENSE",
         "README.md",

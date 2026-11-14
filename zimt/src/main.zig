@@ -18,7 +18,6 @@ const usage =
     \\  --calibrate      use the eye-sphere gaze model, starting with a calibration
     \\                   step (look at the screen centre, press Enter)
     \\  --list-cameras   print the cameras found and exit
-    \\  --source PATH    track a video file instead of a camera
     \\  --print          print every pose sent: x y z yaw pitch roll
     \\  --config PATH    settings file (default: settings.ini next to the executable)
     \\  --model PATH     model file (default: face_landmarker.task next to the executable)
@@ -30,7 +29,6 @@ const Options = struct {
     calibrate: bool = false,
     list_cameras: bool = false,
     print: bool = false,
-    source: ?[:0]const u8 = null,
     config: ?[]const u8 = null,
     model: ?[]const u8 = null,
 };
@@ -80,19 +78,13 @@ fn run(init: std.process.Init) !void {
 
     const cv: capture.Library = capture.Library.load(arena, try std.fs.path.join(arena, &.{ exe_dir, capture.lib_file_name })) catch return error.Reported;
 
-    var cap: capture.Capture = undefined;
-    if (options.source) |path| {
-        cap = cv.openPath(path) orelse return fail("Could not open {s}.", .{path});
-        try out.print("[Camera] Using {s}\n", .{path});
-    } else {
-        const selected = camera.select(arena, io, &cv, cfg.camera_index, cfg.camera_name) catch |err| switch (err) {
-            error.CameraUnavailable => return error.Reported,
-            else => |e| return e,
-        };
-        cap = selected.cap;
-        try out.print("[Camera] Using " ++ enumerate.device_fmt ++ " ({s}), {d}x{d}\n", .{ selected.num, selected.name, selected.width, selected.height });
-    }
+    const selected = camera.select(arena, io, &cv, cfg.camera_index, cfg.camera_name) catch |err| switch (err) {
+        error.CameraUnavailable => return error.Reported,
+        else => |e| return e,
+    };
+    const cap = selected.cap;
     defer cap.close();
+    try out.print("[Camera] Using " ++ enumerate.device_fmt ++ " ({s}), {d}x{d}\n", .{ selected.num, selected.name, selected.width, selected.height });
     try out.flush();
 
     var landmarker = mediapipe.FaceLandmarker.create(arena, try std.fs.path.join(arena, &.{ exe_dir, mediapipe.lib_file_name }), model) catch return error.Reported;
@@ -117,10 +109,7 @@ fn run(init: std.process.Init) !void {
         break :calibrated t.run(spheres);
     } else t.run(null);
     result catch |err| switch (err) {
-        error.CameraStopped => {
-            if (options.source != null) return; // end of the video
-            return fail("Camera stopped delivering frames (unplugged or in use by another app?).", .{});
-        },
+        error.CameraStopped => return fail("Camera stopped delivering frames (unplugged or in use by another app?).", .{}),
         error.StdinClosed, error.MediaPipeFailed => return error.Reported,
         else => |e| return e,
     };
@@ -141,10 +130,10 @@ fn parseArgs(args: []const [:0]const u8, out: *Io.Writer) !Options {
             try out.writeAll(usage);
             try out.flush();
             std.process.exit(0);
-        } else if (std.mem.eql(u8, arg, "--source") or std.mem.eql(u8, arg, "--config") or std.mem.eql(u8, arg, "--model")) {
+        } else if (std.mem.eql(u8, arg, "--config") or std.mem.eql(u8, arg, "--model")) {
             i += 1;
             if (i == args.len) return fail("{s} needs a path.\n\n" ++ usage, .{arg});
-            if (arg[2] == 's') options.source = args[i] else if (arg[2] == 'c') options.config = args[i] else options.model = args[i];
+            if (arg[2] == 'c') options.config = args[i] else options.model = args[i];
         } else {
             return fail("Unknown argument '{s}'.\n\n" ++ usage, .{arg});
         }

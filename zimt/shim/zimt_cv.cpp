@@ -27,10 +27,6 @@ zimt_cap *zimt_cap_open_index(int index, int opencv_api) {
     return open_with([&](cv::VideoCapture &c) { return c.open(index, opencv_api); });
 }
 
-zimt_cap *zimt_cap_open_path(const char *path) {
-    return open_with([&](cv::VideoCapture &c) { return c.open(cv::String(path), cv::CAP_ANY); });
-}
-
 int zimt_cap_read(zimt_cap *cap, const uint8_t **rgb, int *width, int *height) {
     try {
         if (!cap->capture.read(cap->frame) || cap->frame.empty()) return 0;

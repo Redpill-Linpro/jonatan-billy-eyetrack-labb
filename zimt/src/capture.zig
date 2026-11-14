@@ -1,4 +1,4 @@
-//! Frames from OpenCV's VideoCapture, through the C shim in shim/zimt_cv.cpp
+//! Camera frames from OpenCV's VideoCapture, through the C shim in shim/zimt_cv.cpp
 //! (OpenCV has no C API of its own).
 const std = @import("std");
 const dynlib = @import("dynlib.zig");
@@ -6,12 +6,11 @@ const dynlib = @import("dynlib.zig");
 pub const lib_file_name = dynlib.fileName("zimt_cv");
 
 /// Must match ZIMT_CV_ABI in shim/zimt_cv.h.
-const abi_version = 1;
+const abi_version = 2;
 
 const Api = struct {
     zimt_cv_abi: *const fn () callconv(.c) c_int,
     zimt_cap_open_index: *const fn (index: c_int, opencv_api: c_int) callconv(.c) ?*anyopaque,
-    zimt_cap_open_path: *const fn (path: [*:0]const u8) callconv(.c) ?*anyopaque,
     zimt_cap_read: *const fn (*anyopaque, rgb: *?[*]const u8, width: *c_int, height: *c_int) callconv(.c) c_int,
     zimt_cap_close: *const fn (*anyopaque) callconv(.c) void,
 };
@@ -39,12 +38,6 @@ pub const Library = struct {
     /// Opens camera `index` of the given OpenCV backend (a cv::VideoCaptureAPIs value).
     pub fn openIndex(self: *const Library, index: u32, opencv_api: c_int) ?Capture {
         const handle = self.api.zimt_cap_open_index(@intCast(index), opencv_api) orelse return null;
-        return .{ .api = &self.api, .handle = handle };
-    }
-
-    /// Opens a video file (or anything else OpenCV accepts as a path or URL).
-    pub fn openPath(self: *const Library, path: [*:0]const u8) ?Capture {
-        const handle = self.api.zimt_cap_open_path(path) orelse return null;
         return .{ .api = &self.api, .handle = handle };
     }
 };

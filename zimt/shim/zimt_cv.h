@@ -1,5 +1,5 @@
-/* C interface to the part of OpenCV zimt uses: opening a capture and reading
- * RGB frames. Built into a shared library by the Makefile and loaded by zimt
+/* C interface to the part of OpenCV zimt uses: opening a camera and reading
+ * RGB frames. Built by the Makefile into a shared library that contains OpenCV and loaded by zimt
  * at run time. */
 #ifndef ZIMT_CV_H
 #define ZIMT_CV_H
@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /* Bumped whenever this interface changes; checked by src/capture.zig. */
-#define ZIMT_CV_ABI 1
+#define ZIMT_CV_ABI 2
 ZIMT_CV_EXPORT int zimt_cv_abi(void);
 
 typedef struct zimt_cap zimt_cap;
@@ -25,9 +25,6 @@ typedef struct zimt_cap zimt_cap;
 /* Camera `index` of the OpenCV backend `opencv_api` (cv::VideoCaptureAPIs).
  * NULL if it cannot be opened. */
 ZIMT_CV_EXPORT zimt_cap *zimt_cap_open_index(int index, int opencv_api);
-
-/* A video file or URL. NULL if it cannot be opened. */
-ZIMT_CV_EXPORT zimt_cap *zimt_cap_open_path(const char *path);
 
 /* Reads the next frame as tightly packed RGB (width * height * 3 bytes),
  * valid until the next call on this capture. Returns 1, or 0 when there is
